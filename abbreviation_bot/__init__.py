@@ -6,14 +6,8 @@ app = Flask(__name__)
 app.config.from_mapping(
     SECRET_KEY=os.environ.get('SECRET_KEY') or 'dev_key')
 
-def verified(func):
-    def verify_and_execute(*args, **kwargs):
-        if request.form['token'] != os.environ.get('VERIFICATION_TOKEN'):
-            abort(401)
-
-        func(*args, **kwargs)
-
-    return verify_and_execute
+def verify(token):
+    return token == os.environ.get('VERIFICATION_TOKEN')
 
 @app.route("/")
 def hello():
@@ -21,9 +15,11 @@ def hello():
             "you want to know what an abbreviation means.")
 
 
-@verified
 @app.route("/abbreviation", methods=['POST'])
 def get_abbreviation():
+    if not verify(request.form['token']):
+        abort(401)
+
     if request.form['text'] == "":
         return abbreviation.find_all()
     else:
